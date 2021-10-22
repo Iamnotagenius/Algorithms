@@ -4,51 +4,64 @@
 
 const int QUEUE_MIN_SIZE = 1024;
 
+struct node;
+typedef struct node {
+	void *current;
+	struct node *next;
+} queue_node;
+
 typedef struct {
-	int length;
-	int head;
-	int tail;
-	void *buffer;
 	size_t size;
+	queue_node *head;
+	queue_node *tail;
 } queue;
 
 queue *create_queue(size_t size) {
 	queue *new = malloc(sizeof(queue));
-	new->length = QUEUE_MIN_SIZE;
-	new->head = -1;
-	new->tail = 0;
-	new->buffer = malloc(size * new->length);
 	new->size = size;
+	new->head = NULL;
+	new->tail = NULL;
 	return new;
 }
 
 void delete_queue(queue *s) {
-	free(s->buffer);
-	free(s);
-}
-
-void expand(queue *s) {
-	s->length *= 2;
-	s->buffer = realloc(s->buffer, s->length);
-	if (!s->buffer) {
-		fprintf(stderr, "Reallocating memory failed\n");
-		exit(1);
+	while (s->tail != NULL) {
+		queue_node *tmp = s->tail;
+		s->tail = s->tail->next;	
+		free(tmp->current);
+		free(tmp);
 	}
 }
 
 void push(queue *s, void *element) {
-	if (s->length <= ++s->head * s->size)
-		expand(s);
+	queue_node *new = malloc(sizeof(queue_node));
+	new->current = malloc(s->size);
+	memcpy(new->current, element, s->size);
+	new->next = NULL;
 
-	memcpy(s->buffer + s->head * s->size, element, s->size);
+	if (s->head == NULL) {
+		s->tail = new;
+		s->head = new;
+	}
+	else {
+		s->head->next = new;
+		s->head = new;
+	}
 }
 
 int pop(queue *s, void *buf) {
-	if (s->tail > s->head) 
+	if (s->tail == NULL) 
 		return 0;
 
-	memcpy(buf, s->buffer + s->tail * s->size, s->size);
-	s->tail++;
+	memcpy(buf, s->tail->current, s->size);
+	queue_node *tmp = s->tail;
+	s->tail = s->tail->next;
+
+	if (s->tail == NULL)
+		s->head = NULL;
+
+	free(tmp->current);
+	free(tmp);
 	return 1;
 }
 

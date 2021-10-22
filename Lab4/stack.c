@@ -3,50 +3,50 @@
 #include <string.h>
 
 const int STACK_MIN_SIZE = 1024;
+struct node;
+typedef struct node {
+	void *current;
+	struct node *prev;
+} stack_node;
 
 typedef struct {
-	int length;
-	int index;
-	void *buffer;
 	size_t size;
+	stack_node *last;
 } stack;
 
 stack *create_stack(size_t size) {
 	stack *new = malloc(sizeof(stack));
-	new->length = STACK_MIN_SIZE;
-	new->index = -1;
-	new->buffer = malloc(size * new->length);
 	new->size = size;
+	new->last = NULL;
 	return new;
 }
 
 void delete_stack(stack *s) {
-	free(s->buffer);
-	free(s);
-}
-
-void expand(stack *s) {
-	s->length *= 2;
-	s->buffer = realloc(s->buffer, s->length);
-	if (!s->buffer) {
-		fprintf(stderr, "Reallocating memory failed\n");
-		exit(1);
+	while (s->last != NULL) {
+		stack_node *tmp = s->last;
+		s->last = s->last->prev;	
+		free(tmp->current);
+		free(tmp);
 	}
 }
 
 void push(stack *s, void *element) {
-	if (s->length <= ++s->index * s->size)
-		expand(s);
-
-	memcpy(s->buffer + s->index * s->size, element, s->size);
+	stack_node *new = malloc(sizeof(stack_node));
+	new->current = malloc(s->size);
+	memcpy(new->current, element, s->size);
+	new->prev = s->last;
+	s->last = new;
 }
 
 int pop(stack *s, void *buf) {
-	if (s->index < 0) 
+	if (s->last == NULL) 
 		return 0;
 
-	memcpy(buf, s->buffer + s->index * s->size, s->size);
-	s->index--;
+	memcpy(buf, s->last->current, s->size);
+	stack_node *tmp = s->last;
+	s->last = s->last->prev;	
+	free(tmp->current);
+	free(tmp);
 	return 1;
 }
 
@@ -57,12 +57,6 @@ int main() {
 	stack *ints = create_stack(sizeof(int));
 	FILE *in = fopen(IN_FILE, "r"),
 		 *out = fopen(OUT_FILE, "w");
-	/* this works though
-	stack *ints = malloc(sizeof(stack));
-	ints->buffer = malloc(100000 * sizeof(int));
-	ints->index = -1;
-	ints->length = 100000;
-	ints->size = sizeof(int); */
 	int n, x;
 	char op;
 	fscanf(in, "%d", &n);
