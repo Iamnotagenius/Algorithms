@@ -68,7 +68,13 @@ int main() {
 	char op[2];
 	stack *operands = create_stack(sizeof(int));
 	while (!feof(in)) {
-		if (fscanf(in, "%1[*+]", op)) {
+		if (fscanf(in, " %1[0-9] ", op)) {
+			tmp = op[0] - '0';
+			push(operands, &tmp);
+			continue;
+		}
+
+		if (fscanf(in, " %1[-*+] ", op)) {
 			pop(operands, operand);
 			pop(operands, operand + 1);
 			switch (*op) {
@@ -80,13 +86,9 @@ int main() {
 			continue;
 		}
 
-		if (fscanf(in, "%d", &tmp)) {
-			push(operands, &tmp);
-			continue;
-		}
 	}
 
 	pop(operands, &tmp);
-	printf("%d\n", tmp);
+	fprintf(out, "%d\n", tmp);
 }
 
